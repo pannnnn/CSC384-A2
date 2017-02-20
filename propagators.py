@@ -80,7 +80,21 @@ def prop_FC(csp, newVar=None):
     '''Do forward checking. That is check constraints with 
        only one uninstantiated variable. Remember to keep 
        track of all pruned variable,value pairs and return '''
-#IMPLEMENT
+    if not newVar:
+        all_cons = filter(lambda x : len(x)==1, csp.get_all_cons())
+        vars = map(lambda x : x.get_scope, all_cons)
+        if not c.check(list(vars[0].get_assigned_value())):
+            return False, []
+
+    for c in csp.get_cons_with_var(newVar):
+        if c.get_n_unasgn() == 1:
+            vals = []
+            vars = c.get_scope()
+            for var in vars:
+                vals.append(var.get_assigned_value())
+            if not c.check(vals):
+                return False, []
+    return True, []
 
 def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce 

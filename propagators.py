@@ -33,7 +33,7 @@
 
       NOTE propagator SHOULD NOT prune a value that has already been 
       pruned! Nor should it prune a value twice
-
+for c in csp.get_cons_with_var(newVar):
       PROPAGATOR called with newVar = None
       PROCESSING REQUIRED:
         for plain backtracking (where we only check fully instantiated 
@@ -59,6 +59,7 @@
 
          for gac we initialize the GAC queue with all constraints containing V.
    '''
+from collections import deque
 
 def prop_BT(csp, newVar=None):
     '''Do plain backtracking propagation. That is, do no 
@@ -115,4 +116,25 @@ def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce 
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue'''
-    
+    GAC_queue = deque()
+    prune_lst = []
+    if not newVar:
+        GAC_queue.extend(csp.get_all_cons())
+    else:
+        GAC_queue.extend(csp.get_cons_with_var(newVar))
+    if(not enforce_GAC(GAC_queue, prune_lst)):
+        return False, prune_lst
+    return True, prune_lst
+
+def enforce_GAC(GAC_queue, prune_lst):
+    while(not GAC_queue.empty()):
+          c = GAC_queue.get()
+          for V in c.get_scope():
+              for d in V.cur_domain():
+                  if not c.has_support(V, d):
+                      V.prune_value(d)
+                      prune_lst.append((v, d))
+                      if v.cur_domain_size() == 0:
+                          GAC_queue.clear()
+                          return False, prune_lst
+                      else:

@@ -80,24 +80,39 @@ def prop_FC(csp, newVar=None):
     '''Do forward checking. That is check constraints with 
        only one uninstantiated variable. Remember to keep 
        track of all pruned variable,value pairs and return '''
+    prune_lst = []   
     if not newVar:
-        all_cons = filter(lambda x : len(x)==1, csp.get_all_cons())
-        vars = map(lambda x : x.get_scope, all_cons)
-        if not c.check(list(vars[0].get_assigned_value())):
-            return False, []
-
+        all_cons = filter(lambda x : len(x.get_scope())==1 and x.get_n_unasgn == 1, csp.get_all_cons())
+        for c in all_cons:
+            x = c.get_unasgn_vars()[0]
+            if(not FCCheck(c, x, prune_lst)):
+                return False, prune_lst
+        return True, prune_lst
     for c in csp.get_cons_with_var(newVar):
         if c.get_n_unasgn() == 1:
-            vals = []
-            vars = c.get_scope()
-            for var in vars:
-                vals.append(var.get_assigned_value())
-            if not c.check(vals):
-                return False, []
-    return True, []
+            x = c.get_unasgn_vars()[0]
+            if(not FCCheck(c, x, prune_lst)):
+                return False, prune_lst
+    return True, prune_lst
+
+def FCCheck(c, x, prune_lst):
+    vals = []
+    vars = c.get_scope()
+    for var in vars:
+        vals.append(var.get_assigned_value())
+        if not var.is_assigned():
+            index = vars.index(var)
+    for d in x.cur_domain():
+        vals[index] = d
+        if not c.check(vals):
+            prune_lst.append((x, d))
+            x.prune_value(d)
+    if len(x.cur_domain()) == 0:
+        return False
+    return True
 
 def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce 
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue'''
-#IMPLEMENT
+    

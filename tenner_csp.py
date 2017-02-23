@@ -64,8 +64,11 @@ def tenner_csp_model_1(initial_tenner_board):
        model_1 also constains n-nary constraints of sum constraints for each
        column.
     '''
+    # variable_array is for returning purpose
     variable_array = []
+    # variable_array_4_SCP is for initializing the CSP object
     variable_array_4_CSP = []
+    # constraint_array is used for holding all the constraints of the CSP
     constraint_array = []
     val_range = list(range(10))
     row_nums = len(initial_tenner_board[0])
@@ -73,24 +76,32 @@ def tenner_csp_model_1(initial_tenner_board):
     for row_index in range(row_nums):
         row_var = []
         vals_filled = [val for val in initial_tenner_board[0][row_index] if val != -1]
+        # instead of filling up the domain from 0 to 9, eliminate the values that has been assigned to the
+        # pre-defined cells
         val_domain_of_not_filled_cell = [val for val in val_range if val not in vals_filled]
+        # create all variables inside each row per iteration
         for col_index in range(col_nums):
             cell_value = initial_tenner_board[0][row_index][col_index]
             if cell_value == -1:
                 row_var.append(Variable('CELL'+str(row_index)+str(col_index), val_domain_of_not_filled_cell))
             else:
                 row_var.append(Variable('CELL'+str(row_index)+str(col_index), [cell_value]))
+        # this is for naming constraint in a organized way
         constraint_index = 0
+        # extract binary combinations of all possible variables in one row
         for row_vars in itertools.combinations(row_var, 2):
+            # append correponding constraint for binary not equal comparison in each row
             constraint_array.append(add_bin_comp_const(row_vars, row_index, constraint_index))
             constraint_index += 1
         variable_array.append(row_var)
         variable_array_4_CSP.extend(row_var)
     for col_index in range(col_nums):
         col_vars = [variable_array[row_index][col_index] for row_index in range(row_nums)]
+        # append correponding constraint for sum check in each column
         constraint_array.append(add_sum_check_cosnt(col_vars, col_index, initial_tenner_board[1][col_index]))
     for row_index in range(row_nums-1):
         for col_index in range(col_nums):
+            # append correponding constraint for adjacent cells check in the whole table, binary comparison
             adj_vars = []
             adj_vars.append(variable_array[row_index][col_index])
             adj_vars_1 = adj_vars + [variable_array[row_index+1][col_index]]       
@@ -152,6 +163,7 @@ def tenner_csp_model_2(initial_tenner_board):
        model_2 should create these all-different constraints between the relevant
        variables.
     '''
+    # model_2 is almost the same as model 1 except we use all-diff to do the constraint check
     variable_array = []
     variable_array_4_CSP = []
     constraint_array = []
@@ -168,6 +180,7 @@ def tenner_csp_model_2(initial_tenner_board):
                 row_var.append(Variable('CELL'+str(row_index)+str(col_index), val_domain_of_not_filled_cell))
             else:
                 row_var.append(Variable('CELL'+str(row_index)+str(col_index), [cell_value]))
+        # use all-diff constraint instead of binary not-equal
         constraint_array.append(add_all_diff_const(row_var, row_index))
         variable_array.append(row_var)
         variable_array_4_CSP.extend(row_var)
@@ -196,6 +209,7 @@ def tenner_csp_model_2(initial_tenner_board):
     return tennerCSP, variable_array
 
 
+# create constraint for binary not equal comparison in each row
 def add_bin_comp_const(row_vars, row_index, constraint_index):
     c = Constraint('ROW'+str(row_index)+'_'+str(constraint_index), [row_vars[0], row_vars[1]])
     sat_tuples = []
@@ -206,6 +220,7 @@ def add_bin_comp_const(row_vars, row_index, constraint_index):
     c.add_satisfying_tuples(sat_tuples)
     return c
 
+# create constraint for sum check in each column
 def add_sum_check_cosnt(col_vars, col_index, sum_val):
     c = Constraint('COL'+str(col_index), col_vars)
     sat_tuples = []
@@ -216,6 +231,7 @@ def add_sum_check_cosnt(col_vars, col_index, sum_val):
     c.add_satisfying_tuples(sat_tuples)
     return c
 
+# create constraint for adjacent cells check, binary comparison
 def add_adj_check_cosnt(adj_vars, row_index, col_index, constraint_index):
     c = Constraint('ADJ'+str(row_index)+'_'+str(col_index)+'_'+str(constraint_index), adj_vars)
     sat_tuples = []
@@ -226,6 +242,7 @@ def add_adj_check_cosnt(adj_vars, row_index, col_index, constraint_index):
     c.add_satisfying_tuples(sat_tuples)
     return c
 
+# create constraint for all-diff comparison instead of binary not-equal
 def add_all_diff_const(row_vars, row_index):
     c = Constraint('ROW'+str(row_index), row_vars)
     sat_tuples = []

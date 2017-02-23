@@ -82,16 +82,24 @@ def prop_FC(csp, newVar=None):
        only one uninstantiated variable. Remember to keep
        track of all pruned variable,value pairs and return '''
     prune_lst = []
+    # if newVar is None
     if not newVar:
+        # get all constraints that only have one variable in its scope
         all_cons = filter(lambda x : len(x.get_scope())==1 and x.get_n_unasgn == 1, csp.get_all_cons())
         for c in all_cons:
+            # get unassigned variable
             x = c.get_unasgn_vars()[0]
+            # FCCheck will return False if it failed to satisfy this constraint by trying all possible
+            # values in the domain for that unassigned variable, otherwise return True
             if(not FCCheck(c, x, prune_lst)):
                 return False, prune_lst
         return True, prune_lst
     for c in csp.get_cons_with_var(newVar):
         if c.get_n_unasgn() == 1:
+            # get unassigned variable
             x = c.get_unasgn_vars()[0]
+            # FCCheck will return False if it failed to satisfy this constraint by trying all possible
+            # values in the domain for that unassigned variable, otherwise return True
             if(not FCCheck(c, x, prune_lst)):
                 return False, prune_lst
     return True, prune_lst
@@ -99,15 +107,20 @@ def prop_FC(csp, newVar=None):
 def FCCheck(c, x, prune_lst):
     vals = []
     vars = c.get_scope()
+    # this is to build up the value list that can be checked upon sat_tuples
     for var in vars:
         vals.append(var.get_assigned_value())
+        # find the index of the unassigned variable
         if not var.is_assigned():
             index = vars.index(var)
     for d in x.cur_domain():
+        # assign this unassigned variable with different domain values
         vals[index] = d
+        # check, update prune_lst and prune unsatified domain value
         if not c.check(vals):
             prune_lst.append((x, d))
             x.prune_value(d)
+    # no values left in current domain, return False
     if len(x.cur_domain()) == 0:
         return False
     return True
@@ -116,28 +129,36 @@ def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue'''
+    # create empty queue to hold constraints
     GAC_queue = deque()
     prune_lst = []
     if not newVar:
         GAC_queue.extend(csp.get_all_cons())
     else:
         GAC_queue.extend(csp.get_cons_with_var(newVar))
+    # return False if it failed in enforce_GAC method
     if(not enforce_GAC(csp, GAC_queue, prune_lst)):
         return False, prune_lst
     return True, prune_lst
 
 def enforce_GAC(csp, GAC_queue, prune_lst):
     while(len(GAC_queue) > 0):
+          # pop the earliest inserted constraint
           c = GAC_queue.popleft()
+          # get the variables inside the scope
           for V in c.get_scope():
+              # check every possible value inside the variable domain
               for d in V.cur_domain():
+                  # try to find an assignment that satify the constraint
                   if not c.has_support(V, d):
                       V.prune_value(d)
                       prune_lst.append((V, d))
+                      # if all values has been tried, clear the GAC queue and return False
                       if V.cur_domain_size() == 0:
                           GAC_queue.clear()
                           return False
                       else:
+                          # push the constraints that pass the check above and is not in GAC queue into GAC queue
                           new_const = [const for const in csp.get_cons_with_var(V) if const not in GAC_queue]
                           GAC_queue.extend(new_const)
     return True

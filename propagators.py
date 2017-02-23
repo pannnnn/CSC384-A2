@@ -126,17 +126,18 @@ def prop_GAC(csp, newVar=None):
         return False, prune_lst
     return True, prune_lst
 
-def enforce_GAC(csp, scGAC_queue, prune_lst):
-    while(not GAC_queue.empty()):
-          c = GAC_queue.get()
+def enforce_GAC(csp, GAC_queue, prune_lst):
+    while(len(GAC_queue) > 0):
+          c = GAC_queue.popleft()
           for V in c.get_scope():
               for d in V.cur_domain():
                   if not c.has_support(V, d):
                       V.prune_value(d)
-                      prune_lst.append((v, d))
+                      prune_lst.append((V, d))
                       if V.cur_domain_size() == 0:
                           GAC_queue.clear()
                           return False
                       else:
-                          new_const = [const for const in csp.get_cons_with_var(V) if const not in gac_queue]
-                          gac_queue.extend(new_const)
+                          new_const = [const for const in csp.get_cons_with_var(V) if const not in GAC_queue]
+                          GAC_queue.extend(new_const)
+    return True

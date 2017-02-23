@@ -92,18 +92,19 @@ def tenner_csp_model_1(initial_tenner_board):
     for row_index in range(row_nums-1):
         for col_index in range(col_nums):
             adj_vars = []
-            adj_vars.append(variable_array[row_index][col_index])            
+            adj_vars.append(variable_array[row_index][col_index])
+            adj_vars_1 = adj_vars + [variable_array[row_index+1][col_index]]       
             if(col_index == 0):
-                adj_vars.append(variable_array[row_index+1][col_index])
-                adj_vars.append(variable_array[row_index+1][col_index+1])
+                adj_vars_2 = adj_vars + [variable_array[row_index+1][col_index+1]]
             elif(col_index == col_nums-1):
-                adj_vars.append(variable_array[row_index+1][col_index-1])
-                adj_vars.append(variable_array[row_index+1][col_index])
+                adj_vars_2 = adj_vars + [variable_array[row_index+1][col_index-1]]
             else:
-                adj_vars.append(variable_array[row_index+1][col_index-1])
-                adj_vars.append(variable_array[row_index+1][col_index])
-                adj_vars.append(variable_array[row_index+1][col_index+1])
-            constraint_array.append(add_adj_check_cosnt(adj_vars, row_index, col_index))
+                adj_vars_2 = adj_vars + [variable_array[row_index+1][col_index-1]]
+                adj_vars_3 = adj_vars + [variable_array[row_index+1][col_index+1]]
+            constraint_array.append(add_adj_check_cosnt(adj_vars_1, row_index, col_index, 1))
+            constraint_array.append(add_adj_check_cosnt(adj_vars_2, row_index, col_index, 2))
+            if 'adj_vars_3' in locals():
+                constraint_array.append(add_adj_check_cosnt(adj_vars_3, row_index, col_index, 3))
     tennerCSP = CSP("Tenner_Grid", variable_array_4_CSP)
     for const in constraint_array:
         tennerCSP.add_constraint(const)
@@ -129,12 +130,12 @@ def add_sum_check_cosnt(col_vars, col_index, sum_val):
     c.add_satisfying_tuples(sat_tuples)
     return c
 
-def add_adj_check_cosnt(adj_vars, row_index, col_index):
-    c = Constraint('ADJ'+str(row_index)+str(col_index), adj_vars)
+def add_adj_check_cosnt(adj_vars, row_index, col_index, constraint_index):
+    c = Constraint('ADJ'+str(row_index)+'_'+str(col_index)+'_'+str(constraint_index), adj_vars)
     sat_tuples = []
     varDoms = [v.domain() for v in adj_vars]
     for t in itertools.product(*varDoms):
-        if len(set(t)) == len(t):
+        if t[0] != t[1]:
             sat_tuples.append(t)
     c.add_satisfying_tuples(sat_tuples)
     return c
